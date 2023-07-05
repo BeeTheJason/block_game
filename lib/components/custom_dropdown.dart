@@ -10,6 +10,7 @@ class DropDown extends StatelessWidget {
   final TextStyle? style;
   final TextStyle? hintStyle;
   final Color color;
+  final Color? dropdownColor;
   final Color borderColor;
   final double height;
   final double? cornerRadius;
@@ -23,6 +24,7 @@ class DropDown extends StatelessWidget {
       this.value,
       this.hintText,
       this.color = Colors.white,
+      this.dropdownColor,
       this.borderColor = Colors.black45,
       this.style,
       this.hintStyle,
@@ -37,6 +39,7 @@ class DropDown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField2(
+
       decoration: InputDecoration(
           //Add isDense true and zero Padding.
           //Add Horizontal padding using buttonPadding and Vertical padding by increasing buttonHeight instead of add Padding here so that The whole TextField Button become clickable, and also the dropdown menu open under The whole TextField Button.
@@ -70,17 +73,19 @@ class DropDown extends StatelessWidget {
       ),
       iconStyleData: const IconStyleData(
           icon: Icon(
-            Icons.arrow_drop_down,
+            Icons.arrow_drop_down_rounded,
             color: Colors.white,
+            size: 40,
           ),
           iconSize: 20),
       buttonStyleData: const ButtonStyleData(
         height: 40,
-        padding: EdgeInsets.only(left: 1, right: 4),
+        // padding: EdgeInsets.only(left: 0, right: 0),
       ),
       dropdownStyleData: DropdownStyleData(
+        // width: ,
         decoration: BoxDecoration(
-          color: color,
+          color: dropdownColor ?? color,
           borderRadius: BorderRadius.circular(dropdownRadius ?? 15),
         ),
       ),
@@ -88,7 +93,7 @@ class DropDown extends StatelessWidget {
           ?.map((item) => DropdownMenuItem<String>(
                 value: item,
                 // child: SizedBox(width: 60, child: Text(item, style: style)),
-                child: Align(alignment: Alignment.center, child: Text(item, style: style)),
+                child: Align(alignment: Alignment.center, child: Text(item, style: style, maxLines: 1, overflow: TextOverflow.fade,)),
               ))
           .toList(),
       onChanged: isEnable == true ? onChanged : null,

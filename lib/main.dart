@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:black_game/components/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -135,69 +137,23 @@ class _ExampleDragAndDropState extends State<ExampleDragAndDrop> {
       mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
-          child: ReorderableListView.builder(
-            itemCount: _items.length,
-            itemBuilder: (context, index) => Slidable(
-                // Specify a key if the Slidable is dismissible.
-                key: Key("${_items[index].name} + ${DateTime.now()}"),
-                // The end action pane is the one at the right or the bottom side.
-                endActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  dismissible: DismissiblePane(onDismissed: () {
-                    setState(() {
-                      _items.removeAt(index);
-                    });
-                  }),
-                  children: [
-                    SlidableAction(
-                      onPressed: (context) {},
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      icon: Icons.delete,
-                      // label: 'Save',
-                    ),
-                  ],
-                ),
-                child: isDragging
-                    ? DragTarget<Item>(
-                        builder: (context, candidateItems, rejectedItems) {
-                          if (candidateItems.isNotEmpty) {
-                            return Column(
-                              children: [
-                                placeholder(),
-                                RowFullItemWidget(
-                                  item: _items[index],
-                                )
-                              ],
-                            );
-                          } else {
-                            return RowFullItemWidget(
-                              item: _items[index],
-                            );
-                          }
-                        },
-                        onAccept: (data) {
-                          if (data.name == "Loop") {
-                            
-                          }
-                          setState(() {
-                            _items.insert(index, data);
-                          });
-                        },
-                        key: Key('$index + ${DateTime.now()}'),
-                      )
-                    : RowFullItemWidget(
-                        item: _items[index],
-                      )),
+          child: ReorderableListView(
+            proxyDecorator: proxyDecorator,
             footer: DragTarget<Item>(
               builder: (context, candidateItems, rejectedItems) {
                 return placeholder();
               },
               key: const Key('first placeholder'),
               onAccept: (data) {
-                setState(() {
-                  _items.add(data);
-                });
+                if (data.name == "Loop") {
+                  setState(() {
+                    _items.addAll([data, endLoopItem]);
+                  });
+                } else {
+                  setState(() {
+                    _items.add(data);
+                  });
+                }
               },
             ),
             padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -210,6 +166,68 @@ class _ExampleDragAndDropState extends State<ExampleDragAndDrop> {
                 _items.insert(newIndex, item);
               });
             },
+            children: [
+              for (int index = 0; index < _items.length; index += 1)
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  color: Colors.transparent,
+                  key: UniqueKey(),
+                  child: Slidable(
+                      endActionPane: ActionPane(
+                        extentRatio: 0.2,
+                        motion: const ScrollMotion(),
+                        children: [
+                          SlidableAction(
+                            borderRadius: BorderRadius.circular(10),
+                            onPressed: (context) {
+                              setState(() {
+                                _items.removeAt(index);
+                              });
+                            },
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete,
+                          ),
+                        ],
+                      ),
+                      child: isDragging
+                          ? DragTarget<Item>(
+                              builder:
+                                  (context, candidateItems, rejectedItems) {
+                                if (candidateItems.isNotEmpty) {
+                                  return Column(
+                                    children: [
+                                      placeholder(),
+                                      RowFullItemWidget(
+                                        item: _items[index],
+                                      )
+                                    ],
+                                  );
+                                } else {
+                                  return RowFullItemWidget(
+                                    item: _items[index],
+                                  );
+                                }
+                              },
+                              onAccept: (data) {
+                                if (data.name == "Loop") {
+                                  setState(() {
+                                    _items
+                                        .insertAll(index, [data, endLoopItem]);
+                                  });
+                                } else {
+                                  setState(() {
+                                    _items.insert(index, data);
+                                  });
+                                }
+                              },
+                              key: Key('$index + ${DateTime.now()}'),
+                            )
+                          : RowFullItemWidget(
+                              item: _items[index],
+                            )),
+                ),
+            ],
           ),
         ),
       ],
@@ -243,7 +261,7 @@ class _ActionItemWidgetState extends State<ActionItemWidget> {
   Widget build(BuildContext context) {
     return Container(
         // width: double.infinity,
-        margin: EdgeInsets.all(2),
+        // margin: EdgeInsets.all(2),
         padding: EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: widget.item.backgroundColor,
@@ -265,11 +283,10 @@ class _ActionItemWidgetState extends State<ActionItemWidget> {
             const SizedBox(
               width: 10,
             ),
-            SizedBox(
-              width: 200,
+            Expanded(
+              // width: 200,
               child: DropDown(
                 // color: Colors.red,
-
                 cornerRadius: 20,
                 color: widget.item.borderColor,
                 style: const TextStyle(
@@ -315,50 +332,64 @@ class _RowFullItemWidgetState extends State<RowFullItemWidget> {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ActionItemWidget(item: widget.item),
-        Container(
-            // width: double.infinity,
-            margin: EdgeInsets.all(2),
-            padding: EdgeInsets.fromLTRB(5, 0, 20, 0),
-            decoration: BoxDecoration(
-              color: widget.item.optionsColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: widget.item.optionsBorderColor,
-                width: 3.0,
-              ),
-            ),
-            height: 50,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.arrow_left_rounded,
-                    color: Colors.white, size: 30),
-                SizedBox(
-                  width: 100,
-                  child: DropDown(
-                    // color: Colors.red,
-                    cornerRadius: 20,
-                    color: widget.item.optionsDropDownColor,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                    value: dropdownValue,
-                    borderColor: widget.item.optionsBorderColor,
-                    items:
-                        widget.item.options.map((e) => e.toString()).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        dropdownValue = value ?? "";
-                      });
-                    },
-                  ),
+        (widget.item.name == "Light" || widget.item.name == "Sound")
+            ? const SizedBox(
+                width: 20,
+              )
+            : const SizedBox(),
+        Expanded(flex: 2, child: ActionItemWidget(item: widget.item)),
+        const SizedBox(
+          width: 5,
+        ),
+        Expanded(
+          child: Container(
+              // width: double.infinity,
+              // margin: const EdgeInsets.all(2),
+              padding: const EdgeInsets.fromLTRB(5, 0, 20, 0),
+              decoration: BoxDecoration(
+                color: widget.item.optionsColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: widget.item.optionsBorderColor,
+                  width: 3.0,
                 ),
-              ],
-            )),
+              ),
+              height: 50,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.arrow_left_rounded,
+                      color: Colors.white, size: 30),
+                  Expanded(
+                    // width: 100,
+                    child: DropDown(
+                      // color: Colors.red,
+                      cornerRadius: 20,
+                      color: widget.item.name == "Light"
+                          ? getColor(dropdownValue)
+                          : widget.item.optionsDropDownColor,
+                      dropdownColor: widget.item.optionsDropDownColor,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                      value: dropdownValue,
+                      borderColor: widget.item.optionsBorderColor,
+                      items:
+                          widget.item.options.map((e) => e.toString()).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          dropdownValue = value ?? "";
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              )),
+        ),
       ],
     );
   }
@@ -407,7 +438,7 @@ class _CustomDropdownButtonState extends State<CustomDropdownButton> {
                   color: Colors.grey.withOpacity(0.5),
                   spreadRadius: 1,
                   blurRadius: 5,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -434,7 +465,7 @@ class _CustomDropdownButtonState extends State<CustomDropdownButton> {
 
 Widget placeholder() {
   return Container(
-    width: double.infinity,
+    width: 50,
     decoration: BoxDecoration(
       color: Colors.grey[300],
       borderRadius: BorderRadius.circular(10),
@@ -445,5 +476,22 @@ Widget placeholder() {
     ),
     height: 50,
     // child: Text(_items[index].name),
+  );
+}
+
+Widget proxyDecorator(Widget child, int index, Animation<double> animation) {
+  return AnimatedBuilder(
+    animation: animation,
+    builder: (BuildContext context, Widget? child) {
+      final double animValue = Curves.easeInOut.transform(animation.value);
+      final double elevation = lerpDouble(6, 6, animValue)!;
+      return Material(
+        elevation: elevation,
+        color: Colors.transparent,
+        shadowColor: Colors.black.withOpacity(0.5),
+        child: child,
+      );
+    },
+    child: child,
   );
 }
